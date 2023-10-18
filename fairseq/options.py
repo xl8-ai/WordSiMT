@@ -305,6 +305,7 @@ def add_preprocess_args(parser):
                        help="number of parallel workers")
     group.add_argument("--dict-only", action='store_true',
                        help="if true, only builds a dictionary and then exits")
+    group.add_argument('--language-model-name', default=None, type=str)
     # fmt: on
     return parser
 

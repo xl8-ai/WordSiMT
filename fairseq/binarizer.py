@@ -17,6 +17,7 @@ from fairseq.data import Dictionary, indexed_dataset
 from fairseq.file_chunker_utils import Chunker, find_offsets
 from fairseq.file_io import PathManager
 from fairseq.tokenizer import tokenize_line
+from transformers import PreTrainedTokenizerFast
 
 logger = logging.getLogger("binarizer")
 
@@ -260,7 +261,11 @@ class VocabularyDatasetBinarizer(Binarizer):
             summary.replaced = Counter()
 
         def replaced_consumer(word, idx):
-            if idx == self.dict.unk_index and word != self.dict.unk_word:
+            if isinstance(self.dict, PreTrainedTokenizerFast):
+                unk_index, unk_word = self.dict.unk_token_id, self.dict.unk_token
+            else:
+                unk_index, unk_word = self.dict.unk_index, self.dict.unk_word
+            if idx == unk_index and word != unk_word:
                 summary.replaced.update([word])
 
         if self.already_numberized:
@@ -271,6 +276,19 @@ class VocabularyDatasetBinarizer(Binarizer):
             if self.append_eos:
                 id_list.append(self.dict.eos())
             ids = torch.IntTensor(id_list)
+        elif isinstance(self.dict, (PreTrainedTokenizerFast)):
+            line = line.strip()
+            words = self.dict(line)["input_ids"]
+            tokenizedline = self.dict.convert_ids_to_tokens(words)
+            max_len = list(self.dict.max_model_input_sizes.values())[0]
+            if len(tokenizedline) > max_len:
+                tokenizedline = tokenizedline[:max_len]
+            words = self.dict.convert_tokens_to_ids(tokenizedline)
+            nwords = len(words)
+            ids = torch.IntTensor(nwords)
+            for i, word in enumerate(words):
+                ids[i] = word
+                replaced_consumer(tokenizedline[i], word)
         else:
             ids = self.dict.encode_line(
                 line=line,

@@ -71,6 +71,7 @@ def _main(cfg: DictConfig, output_file):
     if cfg.dataset.max_tokens is None and cfg.dataset.batch_size is None:
         cfg.dataset.max_tokens = 12000
     logger.info(cfg)
+    print(cfg, file=output_file)
 
     # Fix seed for stochastic decoding
     if cfg.common.seed is not None and not cfg.generation.no_seed_provided:
@@ -138,6 +139,7 @@ def _main(cfg: DictConfig, output_file):
     align_dict = utils.load_align_dict(cfg.generation.replace_unk)
 
     # Load dataset (possibly sharded)
+    cfg.dataset.required_batch_size_multiple = 1
     itr = task.get_batch_iterator(
         dataset=task.dataset(cfg.dataset.gen_subset),
         max_tokens=cfg.dataset.max_tokens,
@@ -342,6 +344,24 @@ def _main(cfg: DictConfig, output_file):
                                 "E-{}_{}\t{}".format(sample_id, step, h_str),
                                 file=output_file,
                             )
+
+                    if hypo.get("token_contexts", None) is not None:
+                        print(
+                            "TC-{}\t{}".format(
+                                sample_id,
+                                " ".join([str(tc) for tc in hypo["token_contexts"]]),
+                            ),
+                            file=output_file,
+                        )
+
+                    if hypo.get("word_contexts", None) is not None:
+                        print(
+                            "WC-{}\t{}".format(
+                                sample_id,
+                                " ".join([str(wc) for wc in hypo["word_contexts"]]),
+                            ),
+                            file=output_file,
+                        )
 
                 # Score only the top hypothesis
                 if has_target and j == 0:
