@@ -193,6 +193,15 @@ class WaitkTranslationConfig(TranslationConfig):
     eval_waitk: int = field(default=9, metadata={"help": "waitk value for evaluation"})
     word_waitk: bool = field(default=False, metadata={"help": "Apply word-level waitk"})
 
+    # options for warmup
+    warmup_from_nmt: bool = field(
+        default=False, metadata={"help": "warmup from pre-trained NMT model"}
+    )
+    warmup_nmt_file: str = field(
+        default="checkpoint_nmt.pt",
+        metadata={"help": "pre-trained NMT model fine name for warmup training"},
+    )
+
     # LM_NMT args
     language_model_name: Optional[str] = field(default=None)
     encoder_ratio: float = field(default=1.0)

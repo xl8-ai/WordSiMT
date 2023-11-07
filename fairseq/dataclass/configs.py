@@ -777,7 +777,15 @@ class CheckpointConfig(FairseqDataclass):
         },
     )
     model_parallel_size: int = II("common.model_parallel_size")
-
+    # options for warmup
+    warmup_from_nmt: bool = field(
+        default=False, metadata={"help": "warmup from pre-trained NMT model"}
+    )
+    warmup_nmt_file: str = field(
+        default="checkpoint_nmt.pt",
+        metadata={"help": "pre-trained NMT model fine name for warmup training"},
+    )
+ 
 
 @dataclass
 class FairseqBMUFConfig(FairseqDataclass):

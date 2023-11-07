@@ -12,6 +12,7 @@ NODE_RANK=$9
 MASTER_IP="${10}"
 MASTER_PORT="${11}"
 LANGUAGE_MODEL_NAME="${12}"
+USERDIR="${13}"
 
 has_no_space="jv km lo my su th"
 if [ `echo $TGT | grep -c "zh" ` -gt 0 ]; then
@@ -60,4 +61,5 @@ MKL_THREADING_LAYER=GNU torchrun --nproc_per_node=8 \
 	--eval-bleu --eval-bleu-remove-bpe sentencepiece --max-tokens-valid 2000 \
 	--eval-bleu-args '{"beam": 1, "max_len_a": 1.2, "max_len_b": 10}' --eval-bleu-detok=space \
 	--source-lang $SRC --target-lang $TGT --sacrebleu-tokenizer $TOKENIZER --keep-last-epochs 5 \
-	--multi-waitk --eval-waitk $WAITK $EXTRA_ARGS --min-waitk 1 --language-model-name $LANGUAGE_MODEL_NAME --encoder-lm-dropout --encoder-lm-dropout-ratio 0.5 --share-all-embeddings
+	--multi-waitk --eval-waitk $WAITK $EXTRA_ARGS --min-waitk 1 --language-model-name $LANGUAGE_MODEL_NAME --encoder-lm-dropout --encoder-lm-dropout-ratio 0.5 --share-all-embeddings \
+	--user-dir $USERDIR
