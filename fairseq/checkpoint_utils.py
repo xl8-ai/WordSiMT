@@ -228,7 +228,10 @@ def load_checkpoint(cfg: CheckpointConfig, trainer, **passthrough_args):
         )
 
     suffix = trainer.checkpoint_suffix
-    if (
+    warmup_from_nmt = cfg.warmup_from_nmt
+    if warmup_from_nmt == True:
+        checkpoint_path = os.path.join(cfg.save_dir, cfg.warmup_nmt_file)
+    elif (
         cfg.restore_file == "checkpoint_last.pt"
     ):  # default value of restore_file is 'checkpoint_last.pt'
         checkpoint_path = os.path.join(
@@ -271,6 +274,7 @@ def load_checkpoint(cfg: CheckpointConfig, trainer, **passthrough_args):
         reset_lr_scheduler,
         optimizer_overrides,
         reset_meters=reset_meters,
+        warmup_from_nmt=warmup_from_nmt,
     )
 
     if (

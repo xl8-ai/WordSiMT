@@ -22,6 +22,7 @@ from fairseq.binarizer import (
     VocabularyDatasetBinarizer,
 )
 from fairseq.data import Dictionary
+from transformers import AutoTokenizer, PreTrainedTokenizer, PreTrainedTokenizerFast
 
 logging.basicConfig(
     format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
@@ -108,6 +109,13 @@ def _make_binary_dataset(
 ):
     logger.info("[{}] Dictionary: {} types".format(lang, len(vocab)))
 
+    output_prefix += (
+        ".lm" if (isinstance(vocab, (PreTrainedTokenizerFast, PreTrainedTokenizer))) else ""
+    )
+    input_prefix += (
+        ".lm" if (isinstance(vocab, (PreTrainedTokenizerFast, PreTrainedTokenizer))) else ""
+    )
+
     binarizer = VocabularyDatasetBinarizer(
         vocab,
         append_eos=True,
@@ -125,7 +133,12 @@ def _make_binary_dataset(
         num_workers=num_workers,
     )
 
-    logger.info(f"[{lang}] {input_file}: {final_summary} (by {vocab.unk_word})")
+    if hasattr(vocab, "unk_word"):
+        unk_word = vocab.unk_word
+    else:
+        unk_word = vocab.unk_token
+
+    logger.info(f"[{lang}] {input_file}: {final_summary} (by {unk_word})")
 
 
 def _make_binary_alignment_dataset(
@@ -372,6 +385,10 @@ def main(args):
     _make_all(args.source_lang, src_dict, args)
     if target:
         _make_all(args.target_lang, tgt_dict, args)
+
+    if args.language_model_name and args.task == "waitk_translation":
+        lm_tokenizer = AutoTokenizer.from_pretrained(args.language_model_name)
+        _make_all(args.source_lang, lm_tokenizer, args)
 
     # align the datasets if needed
     if args.align_suffix:

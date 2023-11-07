@@ -13,6 +13,7 @@ import math
 import os
 import sys
 from typing import Any, Callable, Dict, List, Optional, Tuple
+from transformers import AutoModel, AutoTokenizer
 
 # We need to setup root logger before importing any fairseq libraries.
 logging.basicConfig(
@@ -86,6 +87,20 @@ def main(cfg: FairseqConfig) -> None:
     # Setup task, e.g., translation, language modeling, etc.
     task = tasks.setup_task(cfg.task)
 
+    # Per each master in node, download the language model.
+    if (
+        cfg.distributed_training.distributed_rank % cfg.distributed_training.nprocs_per_node == 0
+        and (
+            getattr(task.cfg, "language_model_name", None) is not None
+            or getattr(task.cfg, "bert_model_name", None) is not None
+        )
+    ):
+        language_model_name = getattr(task.cfg, "language_model_name", None) or getattr(task.cfg, "bert_model_name")
+        AutoModel.from_pretrained(language_model_name)
+        AutoTokenizer.from_pretrained(language_model_name)
+    # Wait till the language model is downloaded...
+    torch.distributed.barrier()
+
     assert cfg.criterion, "Please specify criterion to train a model"
 
     # Build model and criterion
@@ -94,6 +109,15 @@ def main(cfg: FairseqConfig) -> None:
             model = fsdp_wrap(task.build_model(cfg.model))
     else:
         model = task.build_model(cfg.model)
+    if cfg.task.language_model_name is not None:
+        if not cfg.task.finetune_lm:
+            for param in model.lm.parameters():
+                param.requires_grad = False
+        else:
+            for name, param in model.lm.named_parameters():
+                if 'pooler' in name:
+                    param.requires_grad = False
+
     criterion = task.build_criterion(cfg.criterion)
     logger.info(model)
     logger.info("task: {}".format(task.__class__.__name__))

@@ -20,9 +20,9 @@ except ImportError:
     _xformers_available = False
 
 from fairseq import utils
+from fairseq.models.fairseq_incremental_decoder import FairseqIncrementalDecoder
 from fairseq.modules.fairseq_dropout import FairseqDropout
 from fairseq.modules.quant_noise import quant_noise
-from fairseq.models.fairseq_incremental_decoder import FairseqIncrementalDecoder
 
 
 # TODO: move this into xformers?
@@ -377,7 +377,6 @@ class MultiheadAttention(FairseqIncrementalDecoder):
         need_weights: bool = True,
         attn_mask: Optional[Tensor] = None,
     ) -> Tuple[Tensor, Optional[Tensor]]:
-
         tgt_len, bsz, embed_dim = query.size()
 
         if key_padding_mask is not None:
@@ -530,14 +529,15 @@ class MultiheadAttention(FairseqIncrementalDecoder):
         ):
             assert key is not None and value is not None
 
+            if attn_mask is not None and attn_mask.dim() == 3:
+                attn_mask = attn_mask.repeat_interleave(self.num_heads, dim=0)
+
             if self.use_xformers:
                 return self._xformers_attn_forward(
                     query, key, value, key_padding_mask, need_weights, attn_mask
                 )
 
             else:
-                if attn_mask is not None and attn_mask.dim() == 3:
-                    attn_mask = attn_mask.repeat_interleave(self.num_heads, dim=0)
                 return F.multi_head_attention_forward(
                     query,
                     key,
