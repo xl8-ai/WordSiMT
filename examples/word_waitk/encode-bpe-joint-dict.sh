@@ -52,7 +52,7 @@ if test -f "$TEST_SOURCE"; then
 	        --model "$DATAPATH/sentencepiece.bpe.model" \
 	        --output_format=piece \
 	        --inputs $TEST_SOURCE $TEST_TARGET \
-	        --outputs $DATAPATH/test.bpe.joint.${BPESIZE}.${SRC}-${TGT}.${SRC} $DATAPATH/test.bpe.joint.${BPESIZE}.${SRC}-${TGT}.${TGT} \
+	        --outputs $DATAPATH/test.bpe.joint.${BPESIZE}.${SRC}-${TGT}.${SRC} $DATAPATH/test.bpe.joint.${BPESIZE}.${SRC}-${TGT}.${TGT}
 fi
 
 echo "preparing LM data..."
